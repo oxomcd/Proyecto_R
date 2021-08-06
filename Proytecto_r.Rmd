@@ -1,0 +1,106 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+#Cargando librerías necesarias para el proyecto.
+#Cargando Tidyverse 1.1
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+
+```
+#1. Conociendo los datos. 
+
+
+```{r}
+yearly <- read_csv("deaths_handwashing.csv") #Leyendo archivo 
+yearly #imprimiendo Yearly
+
+```
+#2. El alarmane numero de muertes
+
+```{r}
+yearly <- yearly %>%
+      #mutate(proportion_deaths = deaths/births)
+      mutate(proportion_deaths = 100*deaths/births) #Usando mutate para agregar la proporción, representada como porcentaje. 
+
+yearly #Imprimiendo yearly
+```
+#3. Muertes en las clínicas
+
+```{r}
+
+ggplot(data = yearly)+
+ 
+    aes(year,proportion_deaths,  color = clinic)+ #colores distintos por linea.
+    geom_point()+
+    geom_smooth(size = 1, span=0.5) #Se añdíó la función smooth para una mejor visualización del patrón. 
+  
+```
+#4. Comienza el lavado de manos
+```{r}
+monthly <- read_csv("deaths_clinic_1.csv") #Cargando datos a monthly.
+
+monthly <- monthly %>%
+  mutate(proportion_deaths = deaths/births) #Agregando proportion deaths a monthly. 
+
+head (monthly) # Imprimiendo con Head
+```
+#5. El Efecto del Lavado de Manos
+```{r}
+ggplot(data = monthly)+  #Creando gráfica para observar la tendencia
+ 
+    aes(date,proportion_deaths)+
+    geom_line(color=1, size = 0.5)+
+      geom_smooth(span= 0.5,size = 1, color =2, level = 0.95)+
+  labs(x="Date of occurrence",y="Deaths / Births", title = "Total Deaths vs Date ", subtitle = "Nota, la línea roja ayuda a identificar patrones, el área gris son los intervalos de confianza")
+```
+#6. Los resultados del lavado de manos
+
+```{r}
+monthly <- monthly %>%
+  mutate(handwashing_started = as.Date("1847-01-01") <= date) #Agregando columna TRUE - FALSE
+
+#monthly #Desplegando monthly para revision
+  
+```
+
+```{r}
+ggplot(data = monthly)+
+ 
+    aes(date,proportion_deaths,  color = handwashing_started)+ #graficando para comprender el efecto del handwashing
+    geom_line(size = 0.5)+
+    geom_smooth(span=0.2, size = 1.5, level=0.95)+
+    labs(x= "Date",y="Deaths/Births", title = "Effects of the Handwashing", subtitle = "The vertical black line indicates the handwashing starting in 1847-01-01")+
+      geom_vline(xintercept = as.Date("1847-01-01"))
+
+  
+```
+#7. Mas lavado ? menos muertes?
+
+
+```{r}
+month_summary <- monthly %>%
+
+  group_by( handwashing_started)%>%
+  summarise(mean = mean(proportion_deaths))
+  month_summary
+  
+  reduction = as.double(month_summary[1,2]) -as.double( month_summary[2,2])
+  reduction_percentage = reduction*100
+  print("La Proporcion de reducción promedio al implemenar el lavado de manos fue de:")
+  reduction #proporcion 
+  print("La proporcion de reduccion de muertes porcentual, fue de:")
+  reduction_percentage #En promedio, se redujeron en 7.5% las muertes por sepcis. 
+  print("En promedio las vidas salvadas fueron de")
+  improvement=sum( monthly$births)*reduction
+  #sum(monthly$births)# 26,166 nacimientos registrados
+  improvement #7.52% podría parecer poco, pero al hablar de vidas salvadas, en promedio se salvaron 1967 vidas de
+  
+  
+
+```
+
+
